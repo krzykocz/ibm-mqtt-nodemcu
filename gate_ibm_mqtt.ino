@@ -45,6 +45,7 @@ PubSubClient client(server, 1883, callback, wifiClient);
 
 int publishInterval = 60000; // 60 seconds
 long lastPublishMillis;
+int gate_status;  // 0: Closed 1: Open
 
 void setup() {
   Serial.begin(115200); Serial.println();
@@ -53,6 +54,7 @@ void setup() {
   digitalWrite(GATE_RELAY, HIGH);
 
   pinMode(GATE_CLOSED_SENSOR, INPUT);
+  gate_status = digitalRead(GATE_CLOSED_SENSOR);
 //----------Pin setup------------------
   wifiConnect();
   mqttConnect();
@@ -62,6 +64,10 @@ void setup() {
 void loop() {
   if (millis() - lastPublishMillis > publishInterval) {
     lastPublishMillis = millis();
+    publishData();
+  }
+  if(gate_status != digitalRead(GATE_CLOSED_SENSOR)) {
+    gate_status = digitalRead(GATE_CLOSED_SENSOR);
     publishData();
   }
   if(!client.loop()) {
@@ -106,7 +112,7 @@ void initTopics() {
 }
 void publishData() {
   String payload = "{\"d\":{\"gate_status\":";
-  payload += digitalRead(GATE_CLOSED_SENSOR)?"\"Open\"":"\"Closed\"";
+  payload += gate_status?"\"Open\"":"\"Closed\"";
   payload += "}}";
   
   Serial.print("Sending payload: "); Serial.println(payload);
